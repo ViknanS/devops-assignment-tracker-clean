@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Assignment Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body>
+<div class="background-glow"></div>
+<main class="app-shell">
+    <header class="hero">
+        <h1>Assignment Tracker</h1>
+        <p>Stay organized, beat deadlines, and track your progress.</p>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <section class="flash-wrap">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+    {% endwith %}
+
+    <section class="panel form-panel">
+        <h2>Add Assignment</h2>
+        <form action="{{ url_for('add_assignment') }}" method="post" class="task-form">
+            <div class="field">
+                <label for="title">Title</label>
+                <input id="title" name="title" type="text" placeholder="e.g. Flask API Homework" required>
+            </div>
+            <div class="field">
+                <label for="subject">Subject</label>
+                <input id="subject" name="subject" type="text" placeholder="e.g. Computer Science" required>
+            </div>
+            <div class="field">
+                <label for="deadline">Deadline</label>
+                <input id="deadline" name="deadline" type="date" required>
+            </div>
+            <div class="field">
+                <label for="priority">Priority</label>
+                <select id="priority" name="priority" required>
+                    <option value="High">High</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+            <button type="submit" class="primary-btn">+ Add Assignment</button>
+        </form>
+    </section>
+
+    <section class="panel toolbar-panel">
+        <form method="get" action="{{ url_for('index') }}" class="toolbar-form">
+            <div class="field grow">
+                <label for="search">Search</label>
+                <input id="search" type="text" name="search" placeholder="Search title or subject..." value="{{ search_query }}">
+            </div>
+            <div class="field">
+                <label for="sort">Sort</label>
+                <select id="sort" name="sort">
+                    <option value="deadline_asc" {% if sort_by == 'deadline_asc' %}selected{% endif %}>Deadline: Earliest</option>
+                    <option value="deadline_desc" {% if sort_by == 'deadline_desc' %}selected{% endif %}>Deadline: Latest</option>
+                </select>
+            </div>
+            <button class="secondary-btn" type="submit">Apply</button>
+        </form>
+    </section>
+
+    <section class="panel list-panel">
+        <div class="panel-heading">
+            <h2>Your Assignments</h2>
+            <span class="count-pill">{{ assignments|length }} total</span>
+        </div>
+        {% if assignments %}
+            <div class="assignment-grid">
+                {% for assignment in assignments %}
+                    <article class="assignment-card {% if assignment.is_completed %}completed{% elif assignment.is_overdue %}overdue{% endif %}">
+                        <div class="card-top">
+                            <h3>{{ assignment.title }}</h3>
+                            <span class="priority-badge {{ assignment.priority|lower }}">{{ assignment.priority }}</span>
+                        </div>
+                        <p class="subject">{{ assignment.subject }}</p>
+                        <p class="deadline">
+                            <span class="icon">📅</span>
+                            Deadline: {{ assignment.deadline }}
+                        </p>
+                        <p class="countdown">
+                            {% if assignment.is_completed %}
+                                <span class="good">Completed</span>
+                            {% elif assignment.days_left < 0 %}
+                                <span class="bad">{{ assignment.days_left|abs }} day(s) overdue</span>
+                            {% elif assignment.days_left == 0 %}
+                                <span class="warn">Due today</span>
+                            {% else %}
+                                <span>{{ assignment.days_left }} day(s) left</span>
+                            {% endif %}
+                        </p>
+                        <div class="card-actions">
+                            <form action="{{ url_for('toggle_status', assignment_id=assignment.id) }}" method="post">
+                                <button type="submit" class="icon-btn complete-btn" title="Toggle complete">
+                                    {% if assignment.is_completed %}↩️ Reopen{% else %}✅ Complete{% endif %}
+                                </button>
+                            </form>
+                            <form action="{{ url_for('delete_assignment', assignment_id=assignment.id) }}" method="post" class="delete-form">
+                                <button type="submit" class="icon-btn delete-btn" title="Delete assignment">🗑️ Delete</button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty-state">No assignments found. Add one to get started.</p>
+        {% endif %}
+    </section>
+</main>
+</body>
+</html>

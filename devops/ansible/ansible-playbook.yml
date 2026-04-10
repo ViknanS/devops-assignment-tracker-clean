@@ -1,0 +1,37 @@
+- name: Deploy Student Assignment Tracker
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Docker on Debian/Ubuntu
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Install Docker on RedHat/CentOS
+      ansible.builtin.yum:
+        name: docker
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Pull latest tracker image
+      community.docker.docker_image:
+        name: student-assignment-tracker
+        tag: latest
+        source: pull
+
+    - name: Run tracker container
+      community.docker.docker_container:
+        name: student-assignment-tracker
+        image: student-assignment-tracker:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "5000:5000"
